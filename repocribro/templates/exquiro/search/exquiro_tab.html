@@ -1,0 +1,96 @@
+{% from "macros/basic.html" import octicon without context %}
+<h2>Exquiro</h2>
+
+<p>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Models recognized</th>
+            <th>Models added</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for repo in repos %}
+        <tr>
+            <td><a href="{{ url_for('manage.repository_detail', full_name=repo.full_name) }}">{{ repo.name }}</a></td>
+            <td>{{ repo.neo4j_status }}</td>
+            <td>{{ repo.neo4j_models }}</td>
+            <td>{{ repo.neo4j_added }}</td>
+            <td class="buttons-cell">
+                <div class="btn-group">
+                    <input type = "button" id="add_model" onclick = "add_models_to_neo4j('{{ repo.owner.login }}','{{ repo.name }}')" value = "Add/Update" class="btn btn-primary"/>
+                    {# url_for('core.search', tab='exquiro' #}
+                    <input type = "button" id="delete_model" onclick = "delete_models_from_neo4j('{{ repo.owner.login }}','{{ repo.name }}')" value = "Delete" class="btn btn-primary"/>
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript">
+        $( document ).ready(function() {
+        console.log( "document loaded" );
+        });
+        var $j = jQuery.noConflict();
+        // $j('.btn').click(function() { });
+        function add_models_to_neo4j(owner,repo_name) {
+                var urlWithVar    = '/exquiro/add_to_neo4j/' + owner + '/' + repo_name;
+                // send ajax POST request to start background job
+                $j.ajax({
+                    type: 'GET',
+                    url: urlWithVar,
+                    success: function(data, status, request) {
+                        status_url = request.getResponseHeader('Location');
+                        update_progress(status_url);
+                    },
+                    error: function() {
+                        alert('Unexpected error');
+                    }
+                });
+            }
+            function delete_models_from_neo4j(owner,repo_name) {
+                var urlWithVar    = '/exquiro/delete_from_neo4j/' + owner + '/' + repo_name;
+                // send ajax POST request to start background job
+                $j.ajax({
+                    type: 'GET',
+                    url: urlWithVar,
+                    success: function(data, status, request) {
+                        status_url = request.getResponseHeader('Location');
+                        update_progress(status_url);
+                    },
+                    error: function() {
+                        alert('Unexpected error');
+                    }
+                });
+            }
+        function update_progress(status_url) {
+            // send GET request to status URL
+            $j.getJSON(status_url, function(data) {
+                if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
+                    if ('result' in data) {
+                        // show result update table
+                        alert('Result: ' + data['result']);
+                        // update
+                        location.reload();
+                    }
+                    else {
+                        // something unexpected happened
+                        alert('Result: ' + data['state']);
+                        location.reload();
+                    }
+                }
+                else {
+                    // rerun in 2 seconds
+                    setTimeout(function() {
+                        update_progress(status_url);
+                    }, 2000);
+                }
+            });
+        }
+    </script>
+    {# TODO: pagination? #}
+</table>

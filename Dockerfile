@@ -15,4 +15,8 @@ ENV REPOCRIBRO_CONFIG_FILE=/repocribro/config.cfg
 # Install plugins
 RUN pip install mysqlclient repocribro-file repocribro-badges repocribro-pages
 
+#Install celery
+RUN pip install celery
+RUN pip install redis
+
 ENTRYPOINT ["repocribro"]

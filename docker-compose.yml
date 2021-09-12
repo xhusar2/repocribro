@@ -2,9 +2,9 @@ version: "3"
 services:
   repocribro:
     # locally built:
-    # build: .
+    build: .
     # or public:
-    image: mareksuchanek/repocribro:develop
+    #image: mareksuchanek/repocribro:develop
     entrypoint: ["repocribro", "run", "--host", "0.0.0.0", "--port", "5000"]
     environment:
       REPOCRIBRO_CONFIG_FILE: /repocribro/config.cfg
@@ -20,6 +20,37 @@ services:
       MYSQL_ROOT_PASSWORD: password
     volumes:
       - db_data:/var/lib/mysql
+  neo4j:
+    image: neo4j:3.5
+    restart: unless-stopped
+    #network_mode: "bridge"
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - ./conf:/conf
+      - ./data:/data
+      - ./import:/import
+      - ./logs:/logs
+      - ./plugins:/plugins
+    environment:
+      # Raise memory limits
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms.memory.heap.initial_size=1G
+      - NEO4J_dbms_memory_heap_max__size=1G
+  celery:
+    image: celery_repocribro_worker:latest
+    command:  celery -A tasks.celery worker -l debug
+    links:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - repocribro
+      - redis
+  redis:
+    image: redis:6-alpine
 
 volumes:
   db_data:

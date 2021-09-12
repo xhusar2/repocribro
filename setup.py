@@ -34,6 +34,8 @@ setup(
             'templates/macros/*.html',
             'templates/manage/*.html',
             'templates/manage/dashboard/*.html',
+            'templates/exquiro/search/*.html',
+            'repocribro/controllers/testfile/*.xml',
         ]
     },
     entry_points={
@@ -41,7 +43,8 @@ setup(
             'repocribro = repocribro:cli',
         ],
         'repocribro.ext': [
-            'repocribro-core = repocribro.ext_core:make_extension'
+            'repocribro-core = repocribro.ext_core:make_extension',
+            'exquiro = repocribro.exquiro:make_extension'
         ],
         'flask.commands': [
             'assign_role=repocribro.commands:assign_role',
@@ -64,6 +67,7 @@ setup(
         'python-dotenv',
         'requests',
         'sqlalchemy',
+        'celery',
     ],
     setup_requires=[
         'pytest-runner',

@@ -544,7 +544,7 @@ class Repository(db.Model, SearchableMixin, SerializableMixin):
     __searchable__ = ['full_name', 'languages', 'description']
     __serializable__ = ['id', 'github_id', 'parent_name', 'full_name',
                         'name', 'languages', 'url', 'description', 'private',
-                        'visibility_type', 'last_event', 'owner_id']
+                        'visibility_type', 'last_event', 'owner_id', 'neo4j_status', 'neo4j_models', 'neo4j_added']
 
     #: Unique identifier of the repository
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
@@ -575,6 +575,10 @@ class Repository(db.Model, SearchableMixin, SerializableMixin):
     # Webhook ID for sending events
     last_event = sqlalchemy.Column(sqlalchemy.DateTime,
                                    default=datetime.datetime.now())
+    neo4j_status = sqlalchemy.Column(sqlalchemy.String(100), default="Not added")
+    neo4j_models = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    neo4j_added = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+
     # ID of the owner of repository
     owner_id = sqlalchemy.Column(
         sqlalchemy.Integer, sqlalchemy.ForeignKey('RepositoryOwner.id')
@@ -687,6 +691,21 @@ class Repository(db.Model, SearchableMixin, SerializableMixin):
                            key=lambda kv: kv[1],
                            reverse=True)
             self.languages = ', '.join([lang[0] for lang in langs])
+
+    def update_neo4j_data(self, neo4j_dict):
+        """Set neo4j parsing stats from dict
+
+        :param neo4j_dict:
+        :type neo4j_dict: dict
+        """
+        self.neo4j_status = neo4j_dict['status']
+        if 'recognized' in neo4j_dict.keys():
+            self.neo4j_models = neo4j_dict['recognized']
+        if 'added' in neo4j_dict.keys():
+            self.neo4j_added = neo4j_dict['added']
+        if 'deleted' in neo4j_dict.keys():
+            self.neo4j_added = self.neo4j_added - int(neo4j_dict['deleted']) if self.neo4j_added - int(neo4j_dict['deleted']) >= 0 else 0
+
 
     @staticmethod
     def make_full_name(login, reponame):
